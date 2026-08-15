@@ -1,0 +1,18 @@
+# Logs & runtime artifacts
+*.log
+*.pid
+*.jsonl
+__pycache__/
+.pytest_cache/
+.venv/
+backup-*/
+debug-*.json
+current-live-*
+inactive-*
+live-*
+restart-*
+test-*-*.log
+heartbeat-*.log
+converse-*.log
+meowcaller-*.log
+voice-*.log

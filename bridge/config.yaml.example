@@ -1,0 +1,27 @@
+whatsapp:
+  store_path: "/opt/wa-call-claw/smoke/store.db"
+  device_name: "meowcaller-poc-smoke"
+recording:
+  base_dir: "/opt/wa-call-claw/smoke/calls"
+  max_call_duration: "10m"
+  retention_days: 1
+playback:
+  file: "/opt/wa-call-claw/runtime/playback.wav"
+  hangup_after_play: false
+server:
+  log_file: "/opt/wa-call-claw/smoke/poc.log"
+  log_level: "info"
+bridge:
+  enabled: true
+  listen: "127.0.0.1:9090"
+  path: "/ws"
+outgoing:
+  enabled: true
+  allowlist: false               # true = cek session store (nomor yg pernah chat) | false = semua nomor bebas
+  session_store_path: "/path/to/openclaw/sessions.json"
+  session_allowlist_ttl: "60s"
+  max_calls_per_hour: 10
+  default_delay_ms: 1000
+  hangup_after_play_sec: 3
+  ring_timeout: "60s"
+  audio_dir: "/opt/wa-call-claw/runtime/audio"

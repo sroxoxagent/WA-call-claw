@@ -1,0 +1,28 @@
+{
+  "default_greeting": "assets/opening-ada-yang-bisa-kubantu.wav",
+  "stt": {
+    "provider": "elevenlabs",
+    "model": "scribe_v2_realtime"
+  },
+  "tts": {
+    "provider": "elevenlabs",
+    "voice_id": "YOUR_VOICE_ID",
+    "model": "eleven_multilingual_v2",
+    "speed": 0.94
+  },
+  "vad": {
+    "provider": "elevenlabs",
+    "silence_ms": 1500,
+    "min_silence_duration_ms": 500,
+    "min_speech_duration_ms": 200,
+    "vad_silence_threshold_secs": null
+  },
+  "session": {
+    "resolve_jid_to_phone": true,
+    "load_memory": true
+  },
+  "system_prompt": "This message comes from a WhatsApp voice call. Your reply will be read aloud by TTS. Keep the explanation concise and conversational, preferably one or two short sentences. Reply in the caller's language unless asked otherwise. Return plain, natural, speakable text only. Do not use emojis, markdown, bullet points, code blocks, decorative symbols, or unusual punctuation that sounds awkward when spoken.",
+  "barge_in": {
+    "enabled": true
+  }
+}

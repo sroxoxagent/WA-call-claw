@@ -1,0 +1,3 @@
+# Lightweight real-time VAD for the MEOWcaller POC
+webrtcvad-wheels==2.0.14
+pytest

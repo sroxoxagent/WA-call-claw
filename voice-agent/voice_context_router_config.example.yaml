@@ -1,0 +1,41 @@
+# MEOWcaller Voice Context Router — Configuration Example
+#
+# This file shows how to configure the voice context router.
+# It is NOT automatically loaded — integration with openclaw.json is NOT wired.
+# Copy relevant sections to your own config as needed.
+
+# ── Identity Mappings ──
+# Map WhatsApp JIDs and LIDs to canonical phone numbers.
+# JID mappings are used for phone-based identities (628xxx@s.whatsapp.net).
+# LID mappings are required for non-phone identities (xxx@lid).
+identity_mappings:
+  jid:
+    "6281234567890@s.whatsapp.net": "+6281234567890"
+    "6289999999999@s.whatsapp.net": "+6289999999999"
+  lid:
+    "999999999999999@lid": "+6281234567890"
+    "163015567663345@lid": "+6289999999999"
+
+# ── Session Memory Configuration ──
+# Base directory for session memory files.
+memory_base_dir: "agents/main/sessions/memories"
+
+# Allowlisted memory file patterns (glob-like).
+# Only memory files matching these patterns will be loaded.
+# Set to null or omit to allow all files.
+memory_allowlist:
+  - "chat-whatsapp-direct-*.memory.md"
+  - "chat-whatsapp-group-*.memory.md"
+
+# ── Caller Behavior ──
+# Whether to allow calls from unknown/unmapped callers.
+# When false, unknown callers are rejected immediately.
+# When true (default), unknown callers get a restricted context.
+allow_unknown_callers: true
+
+# ── Context Restrictions ──
+# These are NOT configurable — they are hardcoded in the router:
+#   - No historical chat loading (ever)
+#   - No identity guessing (ever)
+#   - Unknown callers: max_response_length = 200
+#   - Known callers: max_response_length = 500
