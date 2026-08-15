@@ -217,27 +217,81 @@ Deploy mapping:
 
 ⚠️ rsync WITHOUT `--delete` — runtime files (config.yaml, logs, .pid) in TMP stay safe.
 
-## 6. Installation Verification
+## 6. Acceptance Test Cases (run ALL before reporting "ready")
 
-```bash
-# 1. Bridge up?
-curl -s http://127.0.0.1:9090/health || curl -s http://127.0.0.1:9090/
+**Rule:** do NOT report "green light / ready for testing" until **every** test case
+below passes. A bridge that starts is NOT ready — a bot that answers calls but is
+silently deaf/mute (bad ElevenLabs key) is NOT ready.
 
-# 2. Voice agent connected to bridge + gateway?
-tail -20 /path/to/meowcaller-agent/meowcaller-openclaw-voice.log
-# Should show: "bridge connected", "gateway connected: connId=...",
-#              "gateway heartbeat started (interval=5s)"
+### 6.1 Prerequisites & build
 
-# 3. Heartbeat healthy (ping every 5s, RTT logged every 60s)?
-grep "heartbeat ok" /path/to/meowcaller-agent/meowcaller-openclaw-voice.log | tail -3
+| # | Test | Command | Expected |
+|---|------|---------|----------|
+| TC-01 | Go toolchain | `go version` | `go1.2x` reported, no error |
+| TC-02 | Python 3 | `python3 --version` | `Python 3.1x` reported |
+| TC-03 | Bridge binary builds | `cd bridge && go build -o meowcaller-poc ./cmd/meowcaller-poc` | exit 0; `bridge/meowcaller-poc` exists |
+| TC-04 | Voice-agent venv | `cd voice-agent && .venv/bin/pip install -r requirements.txt` | exit 0; `webrtcvad` importable |
+| TC-05 | Config file valid JSON | `python3 -c "import json;json.load(open('<deploy>/config.json'))"` | exit 0, no parse error |
+| TC-06 | `outgoing.allowlist` is a **boolean** | inspect config | `true`/`false`, NOT `[]` (empty list crashes the bridge at startup) |
 
-# 4. Test an incoming call: call the WhatsApp number connected to the bridge.
-#    Afterwards: ls smoke/calls/ → a call_id folder with WAV + metadata.json
-#    Expected on inbound 1:1: caller audio recorded AND caller hears the bot's
-#    TTS playback (two-way, verified 2026-08-15 22:05). If the caller can't hear
-#    the bot, check the multi-relay fix is intact (connectAndAllocateAll in
-#    engine_media.go, PR #26) — single-relay binding breaks inbound audio.
-```
+### 6.2 ElevenLabs (MANDATORY — no key, no voice)
+
+| # | Test | Command | Expected |
+|---|------|---------|----------|
+| TC-07 | Key is set | `test -n "$ELEVENLABS_API_KEY" && echo set` (or the script's key file) | prints `set` |
+| TC-08 | Key is NOT a placeholder | `echo "$ELEVENLABS_API_KEY" \| grep -c "your-key-here"` | prints `0` |
+| TC-09 | **Live STT test** | run `voice-agent/run_stt_agent.sh <sample.wav>` (any real speech file) | transcript text printed, no HTTP 401/403 in log |
+| TC-10 | **Live TTS test** | `ELEVENLABS_API_KEY=$KEY .venv/bin/python -c "from tts_client import ElevenLabsTTSClient; c=ElevenLabsTTSClient(...); d=c.synthesize('hello'); assert len(d)>0; open('/tmp/tts-test.mp3','wb').write(d)"` | file written > 0 bytes, no 401/403 |
+
+> If TC-09 or TC-10 fails with 401/403: the key is invalid/expired — STOP, get a
+> valid key. Do not proceed.
+
+### 6.3 Greeting
+
+| # | Test | Command | Expected |
+|---|------|---------|----------|
+| TC-11 | `default_greeting` is set | inspect bridge config | non-empty value |
+| TC-12 | Greeting file/text resolves | if a path: `test -f <resolved-path>` | file exists (relative paths resolve against the config file's directory) |
+
+> No custom greeting yet? Point `default_greeting` at the shipped
+> `voice-agent/assets/opening-ada-yang-bisa-kubantu.wav` — the bot will speak it
+> without needing TTS.
+
+### 6.4 Runtime health
+
+| # | Test | Command | Expected |
+|---|------|---------|----------|
+| TC-13 | Supervisor up | `cd supervisor && ./supervisor.sh status` | both services alive (bridge + voice agent) |
+| TC-14 | Bridge HTTP/WS listening | `ss -tlnp \| grep 9090` | `127.0.0.1:9090` LISTEN |
+| TC-15 | Voice agent connected to bridge | `grep "bridge connected" <voice-agent log>` | at least one line |
+| TC-16 | Voice agent connected to gateway | `grep "gateway connected" <voice-agent log> \| tail -1` | `connId=...` present |
+| TC-17 | **Protocol negotiation OK** | `grep "protocol=" <voice-agent log> \| tail -1` | `protocol=v3` or `protocol=v4` — NOT `protocol mismatch` / close 1002 |
+| TC-18 | Heartbeat healthy | `grep "heartbeat ok" <voice-agent log> \| tail -3` | RTT logged, no reconnect storm |
+
+### 6.5 End-to-end call tests (real WhatsApp calls)
+
+| # | Test | How | Expected |
+|---|------|-----|----------|
+| TC-19 | Inbound: auto-answer + record | call the number; then `ls smoke/calls/ \| tail -1` | a new `call_id` folder with `.wav` + `metadata.json` |
+| TC-20 | Inbound WAV has audio | `ls -l <newest .wav>` | size > 10 KB (real frames, not silence) |
+| TC-21 | **Two-way audio** | call and listen | caller hears the bot's greeting/TTS playback AND bot hears the caller |
+| TC-22 | Barge-in (if `barge_in.enabled`) | interrupt the bot mid-speech | bot stops, listens, responds |
+| TC-23 | Outbound announcement (if `outgoing.enabled`) | trigger `POST /api/call` with an allowlisted number | dial → WAV plays → hangup after `hangup_after_play_sec` |
+
+> If TC-21 fails (caller can't hear the bot): the multi-relay fix is missing —
+> `connectAndAllocateAll` in `engine_media.go` (PR #26). Single-relay binding
+> breaks inbound audio. Do NOT "fix" it back.
+
+### 6.6 Log hygiene (final sweep)
+
+| # | Test | Command | Expected |
+|---|------|---------|----------|
+| TC-24 | No auth errors | `grep -iE "401\|403\|unauthorized\|invalid.*key" <voice-agent log>` | no output |
+| TC-25 | No protocol mismatch | `grep -i "protocol mismatch" <voice-agent log>` | no output |
+| TC-26 | No crash loops | `grep -c "Traceback" <voice-agent log>` | `0` (or only known, explained errors) |
+
+**All TC-01..TC-26 passing = ready.** Anything less = still in progress — report the
+failing TC numbers with the actual log lines, not "ready".
 
 ## 7. Daily Operations
 
