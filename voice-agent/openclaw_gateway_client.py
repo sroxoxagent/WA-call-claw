@@ -46,8 +46,16 @@ DEFAULT_DEVICE_IDENTITY_PATH = os.getenv(
     "OPENCLAW_DEVICE_IDENTITY_PATH",
     str(Path.home() / ".openclaw" / "identity" / "device.json"),
 )
-# OpenClaw gateway runtime currently speaks protocol v3.
-DEFAULT_PROTOCOL_VERSION = 3
+# OpenClaw gateway protocol negotiation: advertise a RANGE so the same client
+# works against v3 gateways (2026.3.x) and v4 gateways (2026.5+).
+#   - v3 server accepts iff maxProtocol >= 3 and minProtocol <= 3
+#   - v4 server accepts iff maxProtocol >= 4 and minProtocol <= 4
+#   - v4 servers reserve N-1 (v3) for role=node / mode=probe ONLY — general
+#     operator/backend clients MUST advertise up to v4 or they get
+#     "protocol mismatch" (close 1002).
+# The negotiated version comes back in hello-ok payload.protocol.
+MIN_PROTOCOL_VERSION = 3
+MAX_PROTOCOL_VERSION = 4
 DEFAULT_CONNECT_TIMEOUT = 10.0
 DEFAULT_REQUEST_TIMEOUT = 60.0
 DEFAULT_OPERATOR_SCOPES = ["operator.read", "operator.write"]
@@ -98,6 +106,7 @@ class OpenClawGatewayClient:
         self.ws: ClientConnection | Any | None = None
         self.connected = False
         self._conn_id: str | None = None
+        self.protocol_version: int | None = None
         self._connected_at: float = 0.0
         self._req_counter = 0
         self._pending: dict[str, Any] = {}
@@ -305,8 +314,8 @@ class OpenClawGatewayClient:
         )
 
         connect_params = {
-            "minProtocol": DEFAULT_PROTOCOL_VERSION,
-            "maxProtocol": DEFAULT_PROTOCOL_VERSION,
+            "minProtocol": MIN_PROTOCOL_VERSION,
+            "maxProtocol": MAX_PROTOCOL_VERSION,
             "client": {
                 "id": client_id,
                 "displayName": "MEOWcaller Voice Agent",
@@ -361,9 +370,16 @@ class OpenClawGatewayClient:
 
         payload = raw.get("payload", {})
         self._conn_id = payload.get("server", {}).get("connId", "unknown")
+        self.protocol_version = payload.get("protocol", MAX_PROTOCOL_VERSION)
         self._connected_at = time.monotonic()
         self.connected = True
-        LOG.info("gateway connected: connId=%s", self._conn_id)
+        LOG.info(
+            "gateway connected: connId=%s protocol=v%s (advertised %d-%d)",
+            self._conn_id,
+            self.protocol_version,
+            MIN_PROTOCOL_VERSION,
+            MAX_PROTOCOL_VERSION,
+        )
         await self._start_heartbeat()
 
     async def send_agent(

@@ -17,6 +17,7 @@ type Config struct {
 	Server    ServerConfig    `yaml:"server"`
 	Bridge    BridgeConfig    `yaml:"bridge"`
 	Outgoing  OutgoingConfig  `yaml:"outgoing"`
+	Incoming  IncomingConfig  `yaml:"incoming"`
 }
 
 type WhatsAppConfig struct {
@@ -92,6 +93,21 @@ type OutgoingConfig struct {
 	// announcement WAV finishes playing before hanging up. The total call time
 	// from play start is WAV duration + this value.
 	HangupAfterPlaySec int `yaml:"hangup_after_play_sec"`
+}
+
+// IncomingConfig controls inbound call answering.
+type IncomingConfig struct {
+	// Allowlist enables the incoming-call allowlist guard. When true, only
+	// callers whose JID or resolved phone number appears in AllowlistNumbers
+	// are answered; every other caller is rejected (call.Reject()) before any
+	// media setup. When false (default), all incoming calls are answered as
+	// before — backward compatible.
+	Allowlist bool `yaml:"allowlist"`
+	// AllowlistNumbers is the set of allowed callers. Entries may be full JIDs
+	// ("66984377057451@lid", "6281234567890@s.whatsapp.net") or phone numbers
+	// with or without the "+" prefix ("+6281234567890", "6281234567890").
+	// An empty list with Allowlist=true rejects every caller (strict mode).
+	AllowlistNumbers []string `yaml:"allowlist_numbers"`
 }
 
 // DefaultConfig returns a Config with sensible defaults.

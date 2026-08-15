@@ -194,6 +194,28 @@ are relative to the config file's directory, same as `default_greeting`.
   opening greeting grace window. Log line: `processing audio played: call=... pcm_bytes=...`.
 - The WAV must be 16-bit PCM mono (any rate; the agent resamples to 16 kHz).
 
+### Step 4d: Incoming-call allowlist (recommended for private bots)
+
+By default the bridge answers **every** incoming call. To restrict who can actually
+reach the bot, set `incoming.allowlist` in the config:
+
+| Config value | Behavior |
+|---|---|
+| `"incoming": { "allowlist": false }` (default) | answer every incoming call (legacy behavior) |
+| `"incoming": { "allowlist": true, "allowlist_numbers": [...] }` | **only** listed callers are answered; everyone else is rejected via `call.Reject()` before any media setup |
+
+`allowlist_numbers` entries may be full JIDs (`"66984377057451@lid"`,
+`"6281234567890@s.whatsapp.net"`) or phone numbers with/without `+`
+(`"+6281234567890"`, `"6281234567890"`). An **empty list with `allowlist: true`
+rejects every caller** (strict mode) — don't lock yourself out; include at least
+your own number/LID.
+
+**Runtime behavior:** rejected calls are logged
+(`incoming call REJECTED (not in allowlist): id=... peer=... phone=...`) and a
+metadata entry is written with `status: failed`, reason
+`rejected: caller not in allowlist`. The bridge never answers, records, or
+bridges audio for them. The check runs before WAV recorder / sink setup.
+
 ### Step 5: Start the supervisor
 
 ```bash
@@ -277,6 +299,8 @@ silently deaf/mute (bad ElevenLabs key) is NOT ready.
 | TC-11 | `default_greeting` is set | inspect bridge config | non-empty value |
 | TC-12 | Greeting file/text resolves | if a path: `test -f <resolved-path>` | file exists (relative paths resolve against the config file's directory) |
 | TC-12b | `processing_audio` resolves (optional feature) | if set: `test -f <resolved-path>` | file exists; when unset, feature is disabled (no-op) |
+| TC-12c | `incoming.allowlist` is a **boolean** | inspect config | `true`/`false`, NOT `[]` (same pitfall as `outgoing.allowlist`) |
+| TC-12d | `incoming.allowlist_numbers` non-empty when allowlist=true | inspect config | ≥1 entry (empty list + true = rejects EVERY caller) |
 
 > No custom greeting yet? Point `default_greeting` at the shipped
 > `voice-agent/assets/opening-ada-yang-bisa-kubantu.wav` — the bot will speak it

@@ -27,7 +27,7 @@ export PATH="${HOME}/.local/bin:${PATH}"
 
 # --- Auto-load ElevenLabs API key from existing STT wrapper ---
 if [[ -z "${ELEVENLABS_API_KEY:-}" ]]; then
-  KEY="$(sed -n 's/^KEY="\([^"]*\)"/\1/p' /opt/wa-call-claw/CUSTOM_SKILL/elevenlabs-stt/elevenlabs_stt.sh | head -1)"
+  KEY="$(sed -n 's/^KEY="\([^"]*\)"/\1/p' /home/devuser/.openclaw/workspace/CUSTOM_SKILL/elevenlabs-stt/elevenlabs_stt.sh | head -1)"
   if [[ -n "${KEY}" ]]; then
     export ELEVENLABS_API_KEY="${KEY}"
     unset KEY
@@ -38,7 +38,7 @@ fi
 if [[ -z "${MIMO_API_KEY:-}" ]]; then
   MIMO_KEY="$(python3 -c "
 import json
-with open('/opt/openclaw/openclaw.json') as f:
+with open('/home/devuser/.openclaw/openclaw.json') as f:
     cfg = json.load(f)
 providers = cfg.get('models', {}).get('providers', {})
 xiaomi = providers.get('xiaomi-coding', {})
@@ -56,7 +56,7 @@ export MIMO_MODEL="${MIMO_MODEL:-mimo-v2.5}"
 if [[ -z "${OPENCLAW_GATEWAY_TOKEN:-}" ]]; then
   GW_TOKEN="$(python3 -c "
 import json
-with open('/opt/openclaw/openclaw.json') as f:
+with open('/home/devuser/.openclaw/openclaw.json') as f:
     cfg = json.load(f)
 print(cfg.get('gateway', {}).get('auth', {}).get('token', ''))
 " 2>/dev/null)"
@@ -67,7 +67,7 @@ print(cfg.get('gateway', {}).get('auth', {}).get('token', ''))
 fi
 
 # --- Set device identity path for gateway auth ---
-export OPENCLAW_DEVICE_IDENTITY_PATH="${OPENCLAW_DEVICE_IDENTITY_PATH:-/opt/openclaw/identity/device.json}"
+export OPENCLAW_DEVICE_IDENTITY_PATH="${OPENCLAW_DEVICE_IDENTITY_PATH:-/home/devuser/.openclaw/identity/device.json}"
 
 # --- TTS voice settings (matches existing MEOWcaller WAV announcement) ---
 export ELEVENLABS_TTS_VOICE_ID="${ELEVENLABS_TTS_VOICE_ID:-gmnazjXOFoOcWA59sd5m}"

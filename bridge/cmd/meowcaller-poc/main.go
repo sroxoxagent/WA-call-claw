@@ -28,6 +28,7 @@ import (
 	"github.com/meowcaller-poc/internal/bridge"
 	"github.com/meowcaller-poc/internal/config"
 	"github.com/meowcaller-poc/internal/eventspool"
+	"github.com/meowcaller-poc/internal/incoming"
 	"github.com/meowcaller-poc/internal/metadata"
 	"github.com/meowcaller-poc/internal/outgoing"
 	"github.com/meowcaller-poc/internal/recorder"
@@ -107,6 +108,8 @@ func main() {
 			})
 			log.Printf("[outgoing] enabled: allowlist=%v session_store=%s max_calls_per_hour=%d ring_timeout=%s",
 				cfg.Outgoing.Allowlist, cfg.Outgoing.SessionStorePath, cfg.Outgoing.MaxCallsPerHour, cfg.Outgoing.RingTimeout)
+			log.Printf("[incoming] allowlist=%v numbers=%d",
+				cfg.Incoming.Allowlist, len(cfg.Incoming.AllowlistNumbers))
 		} else {
 			log.Printf("[outgoing] WARNING: outgoing enabled but bridge disabled — /api/call will not be exposed")
 		}
@@ -180,6 +183,21 @@ func handleIncomingCall(call *meowcaller.Call, device *whatsmeow.Client, cfg *co
 	} else {
 		log.Printf("incoming call identity: remote_jid=%s remote_phone=unresolved", peerJID)
 	}
+
+	// ── Incoming allowlist guard ──
+	// Reject BEFORE any media/recorder setup when the caller is not allowed:
+	// the bridge never answers numbers outside the allowlist.
+	if cfg.Incoming.Allowlist && !incoming.Allowed(cfg.Incoming.AllowlistNumbers, peerJID, peerPhone) {
+		log.Printf("incoming call REJECTED (not in allowlist): id=%s peer=%s phone=%q", callID, peerJID, peerPhone)
+		meta := metadata.NewCallMetadata(callID, peerJID, "")
+		meta.SetFailed("rejected: caller not in allowlist")
+		metaWriter.WriteMetadata(callID, meta)
+		if err := call.Reject(); err != nil {
+			log.Printf("reject call failed: %v", err)
+		}
+		return
+	}
+
 	recFilename := storage.RecordingFilenameForJID(peerJID)
 	wavPath := storage.CallPath(cfg.Recording.BaseDir, callID, recFilename)
 

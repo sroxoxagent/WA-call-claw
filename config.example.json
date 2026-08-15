@@ -23,6 +23,13 @@
     "resolve_jid_to_phone": true,
     "load_memory": true
   },
+  "incoming": {
+    "allowlist": true,
+    "allowlist_numbers": [
+      "66984377057451@lid",
+      "+6287899303065"
+    ]
+  },
   "barge_in": {
     "enabled": false
   },

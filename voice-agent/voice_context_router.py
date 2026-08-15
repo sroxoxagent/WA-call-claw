@@ -45,7 +45,7 @@ class CallerIdentity:
 
     call_id: str
     raw_jid: str | None = None       # e.g. "6281234567890@s.whatsapp.net"
-    raw_lid: str | None = None       # e.g. "999999999999999@lid"
+    raw_lid: str | None = None       # e.g. "128510068797660@lid"
     canonical_phone: str | None = None  # e.g. "+6281234567890"
     is_known: bool = False           # True if identity resolved to a known caller
     is_mapped: bool = False          # True if a JID/LID -> phone mapping exists
@@ -118,7 +118,7 @@ def extract_phone_from_jid(jid: str) -> str | None:
 def extract_lid_from_string(s: str) -> str | None:
     """Extract the LID prefix from a LID string.
 
-    Returns the numeric part (e.g. "999999999999999") or None.
+    Returns the numeric part (e.g. "128510068797660") or None.
     """
     m = _LID_RE.match(s)
     if m:
@@ -429,7 +429,7 @@ class VoiceContextRouter:
         Args:
             call_id: Unique call identifier.
             raw_jid: Raw WhatsApp JID (e.g. "6281234567890@s.whatsapp.net").
-            raw_lid: Raw WhatsApp LID (e.g. "999999999999999@lid").
+            raw_lid: Raw WhatsApp LID (e.g. "128510068797660@lid").
 
         Returns:
             VoiceContext with identity, memory path, and context data.

@@ -41,7 +41,7 @@ except ImportError:
     from websockets.exceptions import ConnectionClosed  # type: ignore
 
 from audio_convert import chunk_pcm, parse_wav_header, wav_to_pcm_s16le_16k
-# Telegram debug hook removed 2026-08-15 per Owner — no outbound
+# Telegram debug hook removed 2026-08-15 per Shendy — no outbound
 # Telegram logging. Stub kept so legacy call sites are no-ops.
 def debug_notify(*args, **kwargs):
     """No-op: legacy Telegram debug hook removed."""
@@ -202,6 +202,29 @@ def _load_greeting(cfg: dict) -> tuple[str | None, str | None]:
     return raw, None
 
 
+def _load_processing_audio(cfg: dict) -> str | None:
+    """Load the processing/waiting audio path from config.
+
+    ``processing_audio`` is a path to a ``.wav`` file played to the caller
+    while the gateway is thinking (after STT commit, before the reply).
+    Relative paths resolve against the config file's directory.
+    Returns None when unset or unavailable → feature disabled (no-op).
+    """
+    raw = _cfg_str(cfg, "processing_audio", default=None)
+    if not raw:
+        return None
+    candidate = raw
+    if not os.path.isabs(candidate):
+        candidate = os.path.join(
+            os.path.dirname(os.path.abspath(CONFIG_PATH)), candidate
+        )
+    if not os.path.isfile(candidate):
+        LOG.warning("processing_audio file not found: %s", candidate)
+        return None
+    LOG.info("processing audio loaded from wav file: %s", candidate)
+    return candidate
+
+
 # Valid OpenClaw agent session-key shape. The call id remains isolated per call.
 SESSION_KEY_PREFIX = "agent:main:voice"
 OPENING_AUDIO_PATH = os.getenv(
@@ -289,6 +312,12 @@ class OpenClawVoiceAgent:
         # session behavior). Path: $CONFIG_PATH or ./config.json.
         self.config: dict = load_agent_config()
         self.default_greeting, self.opening_wav_path = _load_greeting(self.config)
+        self.processing_wav_path = _load_processing_audio(self.config)
+        # True while the processing/waiting audio is playing — STT finals
+        # arriving in this window are almost always the agent's own audio
+        # picked up ambiently, so they are ignored (mirrors the opening
+        # greeting grace window).
+        self._processing_active = False
         # Barge-in master switch — when disabled (default), user speech never
         # interrupts agent playback: responses always play to completion.
         self.barge_in_enabled = bool(
@@ -856,6 +885,44 @@ class OpenClawVoiceAgent:
         except Exception as exc:
             LOG.error("opening audio playback failed: %s", exc, exc_info=True)
 
+    async def _play_processing_audio(self, call_id: str, generation: int) -> None:
+        """Play the config ``processing_audio`` WAV while the gateway thinks.
+
+        Called right after an STT final commit, before the chat.send round
+        trip. No-op when ``processing_audio`` is unset or unavailable.
+        """
+        path = self.processing_wav_path
+        if not path:
+            return
+        try:
+            audio_bytes = await asyncio.to_thread(lambda: open(path, "rb").read())
+            pcm = wav_to_pcm_s16le_16k(audio_bytes)
+        except (OSError, ValueError) as exc:
+            LOG.warning("processing audio unavailable (%s): %s", path, exc)
+            return
+        if not pcm:
+            LOG.warning("processing audio decoded to empty PCM: %s", path)
+            return
+        self._processing_active = True
+        try:
+            async with self._playback_lock:
+                if self.current_call_id != call_id or self._session_generation != generation:
+                    return
+                await self.bridge.send(AudioPlaying(call_id).to_json())
+                debug_notify(call_id, "play_processing_audio", f"pcm_bytes={len(pcm)}")
+                for frame in chunk_pcm(pcm, DEFAULT_CHUNK_BYTES):
+                    if self.current_call_id != call_id or self._session_generation != generation:
+                        return
+                    await self.bridge.send(pack_audio_frame(call_id, frame))
+                await self.bridge.send(AudioDone(call_id).to_json())
+            LOG.info("processing audio played: call=%s pcm_bytes=%d", call_id, len(pcm))
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            LOG.error("processing audio playback failed: %s", exc, exc_info=True)
+        finally:
+            self._processing_active = False
+
     async def _forward_audio(self, pcm: bytes) -> None:
         """Forward PCM audio to STT."""
         if self.stt is None or self.stt.closed:
@@ -872,6 +939,13 @@ class OpenClawVoiceAgent:
 
         LOG.info("final transcript: %s", text)
         debug_notify(call_id, "stt_final", self._redact_sensitive(text[:120]))
+
+        # Ignore STT commits that arrive while the processing/waiting audio
+        # is playing — they are almost always the agent's own audio picked
+        # up ambiently (mirrors the opening greeting grace window).
+        if self._processing_active:
+            LOG.info("stt final ignored during processing audio: %r", text[:60])
+            return
 
         # A new user turn has finished. Increment the turn epoch so any
         # playback loop still running for a *previous* turn aborts (this
@@ -1055,6 +1129,10 @@ class OpenClawVoiceAgent:
                 debug_notify(call_id, "gateway_reconnecting", "pre_turn")
                 await self.gateway.reconnect()
                 debug_notify(call_id, "gateway_reconnected", "pre_turn")
+
+            # Tell the caller we are working: play the config processing
+            # audio (if set) while the gateway round-trip runs below.
+            await self._play_processing_audio(call_id, generation)
 
             # Build the user message. The system context is embedded at the
             # top so the gateway agent receives it. This is necessary because

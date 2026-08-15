@@ -20,8 +20,8 @@ Usage:
     from openclaw_session_resolver import OpenClawSessionResolver
 
     resolver = OpenClawSessionResolver("/path/to/sessions.json")
-    path = resolver.find_session_memory_path("+6281234567890")
-    # path == "/…/memories/chat-whatsapp-direct-+6281234567890.memory.md"
+    path = resolver.find_session_memory_path("+6287899303065")
+    # path == "/…/memories/chat-whatsapp-direct-+6287899303065.memory.md"
     #       or None if no session / no file on disk
 """
 
@@ -124,7 +124,7 @@ class OpenClawSessionResolver:
         """Find the ``agent:main:whatsapp:direct:<phone>`` session key.
 
         Args:
-            phone: Canonical phone (e.g. "+6281234567890") or raw
+            phone: Canonical phone (e.g. "+6287899303065") or raw
                    (e.g. "081234567890").  Normalised internally.
             fuzzy: When True, also try matching without the leading
                    ``+`` and with common prefix variations (08→+628…).
@@ -296,7 +296,7 @@ class OpenClawSessionResolver:
         only locates the memory file for context loading.
 
         Args:
-            phone: Canonical phone (e.g. "+6281234567890") or raw.
+            phone: Canonical phone (e.g. "+6287899303065") or raw.
             memory_base_dir: Override for the memories directory.
                    Defaults to ``~/.openclaw/agents/main/sessions/memories``.
 
@@ -487,7 +487,7 @@ class OpenClawSessionResolver:
         """Redact a phone number for safe logging.
 
         Shows only the country code and last 4 digits:
-        "+6281234567890" → "+62****67890"
+        "+6287899303065" → "+62****03065"
         """
         if len(phone) <= 7:
             return "***"
