@@ -158,12 +158,13 @@ directory):
 
 | Format | Behavior |
 |---|---|
-| plain text, e.g. `"Halo, ada yang bisa kubantu?"` | synthesized with TTS at call time |
+| plain text, e.g. `"Hello, how can I help you?"` | synthesized with TTS at call time |
 | `.txt` file path | file text is read, then synthesized with TTS |
 | `.wav` file path | played **directly as-is, no TTS** (recommended: zero latency, no key needed for playback) |
 
 **Defaults:** the repo ships a ready-to-use WAV greeting at
-`voice-agent/assets/opening-ada-yang-bisa-kubantu.wav` ("Halo, ada yang bisa kubantu?").
+`voice-agent/assets/opening-ada-yang-bisa-kubantu.wav` (Indonesian for
+"Halo, ada yang bisa kubantu?" / "Hello, how can I help you?").
 If you don't have a custom greeting yet, point `default_greeting` at that WAV — the
 bot will still speak it even while you sort out your own ElevenLabs voice.
 
@@ -183,8 +184,9 @@ the `chat.send` round trip:
 | omitted / `null` / empty string | feature disabled (no-op, silence while thinking) |
 
 **Defaults:** the repo ships `voice-agent/assets/processing-oke-tunggu-sebentar.wav`
-("Oke, tunggu sebentar yah!" — 1.7 s, 16 kHz mono PCM, same voice as the bot). Paths
-are relative to the config file's directory, same as `default_greeting`.
+(Indonesian for "Oke, tunggu sebentar yah!" / "OK, wait a moment!" — 1.7 s, 16 kHz
+mono PCM, same voice as the bot). Paths are relative to the config file's directory,
+same as `default_greeting`.
 
 **How it works (implementation notes):**
 - Played in `_process_voice_turn`, after the gateway reconnect check and before
@@ -207,7 +209,7 @@ reach the bot, set `incoming.allowlist` in the config:
 `allowlist_numbers` entries may be full JIDs (`"66984377057451@lid"`,
 `"6281234567890@s.whatsapp.net"`) or phone numbers with/without `+`
 (`"+6281234567890"`, `"6281234567890"`). An **empty list with `allowlist: true`
-rejects every caller** (strict mode) — don't lock yourself out; include at least
+ignores every caller** (strict mode) — don't lock yourself out; include at least
 your own number/LID.
 
 **Runtime behavior:** disallowed calls are logged
@@ -302,7 +304,7 @@ silently deaf/mute (bad ElevenLabs key) is NOT ready.
 | TC-12 | Greeting file/text resolves | if a path: `test -f <resolved-path>` | file exists (relative paths resolve against the config file's directory) |
 | TC-12b | `processing_audio` resolves (optional feature) | if set: `test -f <resolved-path>` | file exists; when unset, feature is disabled (no-op) |
 | TC-12c | `incoming.allowlist` is a **boolean** | inspect config | `true`/`false`, NOT `[]` (same pitfall as `outgoing.allowlist`) |
-| TC-12d | `incoming.allowlist_numbers` non-empty when allowlist=true | inspect config | ≥1 entry (empty list + true = rejects EVERY caller) |
+| TC-12d | `incoming.allowlist_numbers` non-empty when allowlist=true | inspect config | ≥1 entry (empty list + true = ignores EVERY caller) |
 
 > No custom greeting yet? Point `default_greeting` at the shipped
 > `voice-agent/assets/opening-ada-yang-bisa-kubantu.wav` — the bot will speak it

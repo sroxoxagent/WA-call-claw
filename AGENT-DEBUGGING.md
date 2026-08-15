@@ -48,10 +48,10 @@ Real example (verified two-way call, 2026-08-15 22:05). Read top to bottom:
 | 3. Context loaded | `session resolved (exact): phone=+62****03065 → key=agent:main:direct:...` | right Gateway session found |
 | 4. STT up | `ElevenLabs STT WebSocket connected` | STT session live |
 | 5. Greeting | `greeting loaded from config wav (49040 bytes PCM)` → `opening audio played: ... pcm_bytes=49040` | **opening played to caller** |
-| 6. Caller speaks | `STT segment committed after 1280ms silence` → `final transcript: Jelasin tentang bridge in toh...` | caller audio heard + transcribed |
-| 6b. Waiting cue | `processing audio played: call=... pcm_bytes=...` | "Oke, tunggu sebentar yah!" played while gateway thinks (config `processing_audio`; absent = disabled) |
+| 6. Caller speaks | `STT segment committed after 1280ms silence` → `final transcript: Explain the bridge to me...` | caller audio heard + transcribed |
+| 6b. Waiting cue | `processing audio played: call=... pcm_bytes=...` | "OK, wait a moment!" played while gateway thinks (config `processing_audio`; absent = disabled) |
 | 7. Think | `chat.send ack: runId=... status=started` | turn sent to OpenClaw |
-| 8. Answer ready | `gateway response: Barge in itu fitur yang bikin kamu bisa motong aku...` | model replied |
+| 8. Answer ready | `gateway response: Barge-in is the feature that lets you interrupt me...` | model replied |
 | 9. Speak | `HTTP Request: POST https://api.elevenlabs.io/v1/text-to-speech/... "HTTP/1.1 200 OK"` → `TTS decoded (container): pcm_bytes=335204` | TTS synthesized |
 | 10. Playback | `barge-in armed by VAD` | reply playing to caller (armed = listening for interruptions) |
 

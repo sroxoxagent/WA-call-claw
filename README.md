@@ -144,7 +144,7 @@ bad format) return HTTP 409 with a `reason`. Completed calls write a
 Point your AI assistant at this repo — no need to copy commands by hand:
 
 > **"Install WA-call-claw following the repo."**
-> *(or: "Setup WA-call-claw dari repo, ikutin yang ada di situ")*
+> *(or: "Set up WA-call-claw from the repo, follow what's in there")*
 
 The agent must read **[AGENTS.md](AGENTS.md)** — a step-by-step setup guide written
 for AI agents (prerequisites → build → config → env vars → supervisor →
@@ -260,15 +260,15 @@ WA-call-claw/
 ├── AGENTS.md            # ⭐ Setup guide for AI agents — read this first when installing
 ├── bridge/              # Go bridge (meowcaller): cmd/, internal/, third_party/
 │   ├── config.yaml.example
-│   └── README.md        # docs teknis bridge (POC scope)
+│   └── README.md        # technical bridge docs (POC scope)
 ├── voice-agent/         # Python voice agent: STT → LLM → TTS pipeline
 │   ├── config.json.example
 │   ├── assets/          # greeting audio
 │   └── tests/
 ├── scripts/             # CLI & tooling: wacall.py (outgoing call), deploy.sh, bridge scripts
-├── supervisor/          # supervisor v3: jaga bridge + voice agent tetap hidup
-├── config.example.json  # contoh config voice agent (top-level)
-└── wa-call-simple.png   # diagram arsitektur
+├── supervisor/          # supervisor v3: keeps bridge + voice agent alive
+├── config.example.json  # example voice agent config (top-level)
+└── wa-call-simple.png   # architecture diagram
 ```
 
 > **Installing?** Read [AGENTS.md](AGENTS.md) — the step-by-step setup guide for AI agents.
@@ -276,7 +276,6 @@ WA-call-claw/
 
 ## Development workflow
 
-- **Edit kode** di repo ini (bridge/ = Go, voice-agent/ = Python).
-- **Deploy ke runtime**: `./scripts/deploy.sh` — sync `bridge/` → `TMP/meowcaller-poc/`, build binary, restart bridge, verifikasi otomatis. Runtime tetap berjalan dari `TMP/` (binary + config + log), repo ini single source of truth.
-- **Config aktif** tidak pernah di-commit (`.gitignore`). Contoh: `bridge/config.yaml.example`, `voice-agent/config.json.example`.
-gent/config.json.example`.
+- **Edit code** in this repo (bridge/ = Go, voice-agent/ = Python).
+- **Deploy to runtime**: `./scripts/deploy.sh` — syncs `bridge/` → `TMP/meowcaller-poc/`, builds the binary, restarts the bridge, verifies automatically. The runtime keeps running from `TMP/` (binary + config + logs); this repo is the single source of truth.
+- **Active config** is never committed (`.gitignore`). Examples: `bridge/config.yaml.example`, `voice-agent/config.json.example`.
