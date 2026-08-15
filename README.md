@@ -51,7 +51,7 @@ Speech-to-text and text-to-speech are pluggable — [ElevenLabs](https://elevenl
 | Use case | Status | Evidence |
 |----------|--------|----------|
 | Incoming call: two-way conversation (bot hears + speaks) | ✅ **Verified** | 2026-08-15 22:05 WIB — 796 frames recorded, TTS playback heard, 5× barge-in OK |
-| Incoming call: auto-answer + record caller audio | ✅ Verified | multiple calls, see `bridge/VERIFIED.md` |
+| Incoming call: auto-answer + record caller audio | ✅ Verified | 2026-08-15 22:05 (796 frames, 1.5 MB WAV) |
 | Outgoing announcement call (dial → play WAV → hang up) | ✅ Verified | 3× calls 2026-08-15 17:07–17:11 |
 | Outgoing call + record peer speech (STT) | ✅ Verified | 150+ frames received |
 | Group calls | 🚧 In progress | core library supports it — bridge in progress |
