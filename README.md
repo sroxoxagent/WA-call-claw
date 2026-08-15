@@ -4,7 +4,7 @@
 
 Answer **incoming WhatsApp calls** with an AI voice agent — hear the caller, think, and speak back. Also supports **one-way outgoing announcement calls** (dial → play a pre-recorded message → hang up).
 
-> ✅ **Inbound 1:1 calls are two-way and verified** (2026-08-15 22:05 WIB: call recorded 796 audio frames, TTS playback heard by caller, 5× barge-in interruptions worked). The multi-relay fix (PR #26) made inbound audio flow in both directions. See `bridge/VERIFIED.md`.
+> ✅ **Inbound 1:1 calls are two-way and verified** (2026-08-15 22:05 WIB: call recorded 796 audio frames, TTS playback heard by caller, 5× barge-in interruptions worked). The multi-relay fix (PR #26) made inbound audio flow in both directions.
 
 ![Architecture](wa-call-simple.png)
 
@@ -279,3 +279,4 @@ WA-call-claw/
 - **Edit kode** di repo ini (bridge/ = Go, voice-agent/ = Python).
 - **Deploy ke runtime**: `./scripts/deploy.sh` — sync `bridge/` → `TMP/meowcaller-poc/`, build binary, restart bridge, verifikasi otomatis. Runtime tetap berjalan dari `TMP/` (binary + config + log), repo ini single source of truth.
 - **Config aktif** tidak pernah di-commit (`.gitignore`). Contoh: `bridge/config.yaml.example`, `voice-agent/config.json.example`.
+gent/config.json.example`.

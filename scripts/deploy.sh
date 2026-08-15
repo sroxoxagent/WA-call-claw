@@ -51,8 +51,6 @@ rsync -av ${DRY} \
   --exclude '__pycache__/' \
   --exclude '.gitignore' \
   --exclude 'README.md' \
-  --exclude 'VERIFIED.md' \
-  --exclude 'VERIFICATION-REPORT.md' \
   --exclude 'config.yaml.example' \
   "${REPO}/bridge/" "${TMP}/" 2>&1 | tail -15 | tee -a "${LOG}"
 

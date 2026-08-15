@@ -297,5 +297,5 @@ file). `delay_ms` overrides `default_delay_ms` when present.
 | 1 | Auto-answer + WAV recording + metadata + WebSocket bridge | This POC |
 | 2 | WAV→MP3 conversion, retention policy, logging | Partial (CLI auto-convert done; server-side retention deferred) |
 | 3 | Two-way audio mixing, multi-agent | Deferred |
-| 4 | Outgoing calls (WAV announcement, allowlist, rate limit) | Done — verified 2026-08-15 (see VERIFIED.md) |
+| 4 | Outgoing calls (WAV announcement, allowlist, rate limit) | Done — verified 2026-08-15 |
 | 5 | Outgoing live-agent audio, webhooks, database, dashboard | Deferred |

@@ -35,7 +35,7 @@ WhatsApp caller ──▶ Bridge (Go, :9090/ws) ──▶ Voice Agent (Python)
 > playback (barge-in works). This is thanks to the multi-relay fix (PR #26,
 > `connectAndAllocateAll` in engine_media.go) — do NOT "fix" it back to
 > single-relay binding, inbound audio will break. Outgoing announcement calls are
-> also verified. Group calls: in progress. Details: `bridge/VERIFIED.md`.
+> also verified. Group calls: in progress.
 
 ## 2. Prerequisites (check these first)
 
