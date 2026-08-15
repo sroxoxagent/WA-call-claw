@@ -49,6 +49,7 @@ Real example (verified two-way call, 2026-08-15 22:05). Read top to bottom:
 | 4. STT up | `ElevenLabs STT WebSocket connected` | STT session live |
 | 5. Greeting | `greeting loaded from config wav (49040 bytes PCM)` → `opening audio played: ... pcm_bytes=49040` | **opening played to caller** |
 | 6. Caller speaks | `STT segment committed after 1280ms silence` → `final transcript: Jelasin tentang bridge in toh...` | caller audio heard + transcribed |
+| 6b. Waiting cue | `processing audio played: call=... pcm_bytes=...` | "Oke, tunggu sebentar yah!" played while gateway thinks (config `processing_audio`; absent = disabled) |
 | 7. Think | `chat.send ack: runId=... status=started` | turn sent to OpenClaw |
 | 8. Answer ready | `gateway response: Barge in itu fitur yang bikin kamu bisa motong aku...` | model replied |
 | 9. Speak | `HTTP Request: POST https://api.elevenlabs.io/v1/text-to-speech/... "HTTP/1.1 200 OK"` → `TTS decoded (container): pcm_bytes=335204` | TTS synthesized |
@@ -92,6 +93,14 @@ Walk the chain, stop at the first missing line:
    - If the caller is silent on the recording too (WAV tiny, `frame_count` low) → the
      **inbound audio path** is broken (Case D), not STT.
 2. **Did the gateway round-trip happen?**
+   - `grep "processing audio played" <voice-agent log> | tail -1` — present = the
+     waiting cue fired after STT commit (feature `processing_audio` works).
+     **Missing but configured** → check `grep "processing audio" <voice-agent log>`:
+     - `processing audio loaded from wav file: ...` at startup = config OK; if the
+       play line is still missing the WAV may be empty/undecodable
+       (`processing audio decoded to empty PCM`).
+     - `processing_audio file not found: ...` = bad path (relative paths resolve
+       against the config file's directory).
    - `grep "chat.send ack" <voice-agent log> | tail -1` — missing/timeout →
      gateway unreachable. Check `grep -i "gateway" <voice-agent log> | tail -10`:
      - `gateway heartbeat failed ()` → connection is flapping (see Case F).

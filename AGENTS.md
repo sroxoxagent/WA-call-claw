@@ -170,6 +170,30 @@ bot will still speak it even while you sort out your own ElevenLabs voice.
 **Do not skip this config.** Without `default_greeting` the call has an awkward dead
 silence until the caller speaks. Set it during setup, before the first test call.
 
+### Step 4c: Processing/waiting audio (optional but recommended)
+
+While the gateway is thinking (after the caller finishes speaking, before the reply
+starts), the caller would otherwise hear dead silence. Set `processing_audio` in the
+config to a `.wav` file and the agent plays it right after each STT commit, before
+the `chat.send` round trip:
+
+| Config value | Behavior |
+|---|---|
+| `"processing_audio": "assets/processing-oke-tunggu-sebentar.wav"` | plays the WAV while waiting for the reply |
+| omitted / `null` / empty string | feature disabled (no-op, silence while thinking) |
+
+**Defaults:** the repo ships `voice-agent/assets/processing-oke-tunggu-sebentar.wav`
+("Oke, tunggu sebentar yah!" — 1.7 s, 16 kHz mono PCM, same voice as the bot). Paths
+are relative to the config file's directory, same as `default_greeting`.
+
+**How it works (implementation notes):**
+- Played in `_process_voice_turn`, after the gateway reconnect check and before
+  `chat.send` — inside `_playback_lock`, so it can never overlap the reply playback.
+- STT finals that arrive while it is playing are **ignored** (they would almost
+  always be the agent's own audio picked up ambiently) — same reasoning as the
+  opening greeting grace window. Log line: `processing audio played: call=... pcm_bytes=...`.
+- The WAV must be 16-bit PCM mono (any rate; the agent resamples to 16 kHz).
+
 ### Step 5: Start the supervisor
 
 ```bash
@@ -252,6 +276,7 @@ silently deaf/mute (bad ElevenLabs key) is NOT ready.
 |---|------|---------|----------|
 | TC-11 | `default_greeting` is set | inspect bridge config | non-empty value |
 | TC-12 | Greeting file/text resolves | if a path: `test -f <resolved-path>` | file exists (relative paths resolve against the config file's directory) |
+| TC-12b | `processing_audio` resolves (optional feature) | if set: `test -f <resolved-path>` | file exists; when unset, feature is disabled (no-op) |
 
 > No custom greeting yet? Point `default_greeting` at the shipped
 > `voice-agent/assets/opening-ada-yang-bisa-kubantu.wav` — the bot will speak it

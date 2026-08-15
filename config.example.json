@@ -1,5 +1,6 @@
 {
   "default_greeting": "assets/opening-ada-yang-bisa-kubantu.wav",
+  "processing_audio": "assets/processing-oke-tunggu-sebentar.wav",
   "system_prompt": "This message comes from a WhatsApp voice call. Your reply will be read aloud by TTS. Keep the explanation concise and conversational, preferably one or two short sentences. Reply in the caller's language unless asked otherwise. Return plain, natural, speakable text only. Do not use emojis, markdown, bullet points, code blocks, decorative symbols, or unusual punctuation that sounds awkward when spoken.",
   "stt": {
     "provider": "elevenlabs",
