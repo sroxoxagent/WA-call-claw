@@ -68,6 +68,11 @@ Walk the chain, stop at the first missing line:
 2. `grep "greeting loaded" <voice-agent log> | tail -1`
    - `greeting loaded from config wav (49040 bytes PCM)` → config OK.
    - `greeting loaded from wav file: <path>` → path from config resolved.
+   - `greeting loaded from mp3 file` / decode path → **ffmpeg required** to decode
+     MP3 greetings (`voice-agent/audio_convert.py`). If it fails, run
+     `ffmpeg -version` — missing ffmpeg = MP3 greetings silently fail. Note the
+     binary may live in `~/.local/bin` (not on default PATH); `run_openclaw_voice.sh`
+     adds it, but if you launch the agent manually, export PATH first.
    - Nothing → `default_greeting` not set in bridge config, or path wrong (relative
      paths resolve against the **config file's directory**).
 3. `grep "opening audio played" <voice-agent log> | tail -1`
@@ -185,6 +190,9 @@ grep "TTS decoded" meowcaller-openclaw-voice.log | tail -1
 # Recording health
 ls -t smoke/calls/ | head -1
 cat smoke/calls/$(ls -t smoke/calls/ | head -1)/metadata.json
+
+# ffmpeg dependency (needed for wacall.py conversions + MP3 greeting decode)
+ffmpeg -version | head -1   # "ffmpeg version ..." = OK; "command not found" = install it
 
 # Errors (any of these = problem)
 grep -iE "401|403|429|unauthorized|invalid.*key|protocol mismatch|Traceback" meowcaller-openclaw-voice.log | tail -10

@@ -43,7 +43,7 @@ WhatsApp caller ──▶ Bridge (Go, :9090/ws) ──▶ Voice Agent (Python)
 |---|---|---|
 | Go | 1.25 | `go version` |
 | Python | 3.12 | `python3 --version` |
-| ffmpeg | any | `ffmpeg -version` (used by wacall.py for audio conversion) |
+| ffmpeg | any | `ffmpeg -version` (used by `scripts/wacall.py` for audio conversion AND `voice-agent/audio_convert.py` to decode MP3 greetings) |
 | OpenClaw Gateway | running locally | `curl -s http://127.0.0.1:18789/health` or check `openclaw status` |
 | systemd (user) | present | `systemctl --user status` (for the supervisor service) |
 
