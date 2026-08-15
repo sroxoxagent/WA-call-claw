@@ -307,6 +307,11 @@ failing TC numbers with the actual log lines, not "ready".
 
 ## 8. Troubleshooting
 
+> Full debugging guide: **`AGENT-DEBUGGING.md`** — log inventory, the "golden path"
+> of a healthy call, per-symptom walkthroughs (no opening audio, no reply, cut-off
+> replies, one-way audio, protocol mismatch, heartbeat loops), diagnostic one-liners,
+> and reporting rules. Read it before touching anything.
+
 ### "gateway heartbeat failed" → reconnect loop
 - Symptom: repeated `gateway heartbeat failed (), scheduling reconnect` lines.
 - Check first: `ss -tnp | grep 18789` — look at Recv-Q on the voice agent side.
