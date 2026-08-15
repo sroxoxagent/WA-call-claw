@@ -185,16 +185,15 @@ func handleIncomingCall(call *meowcaller.Call, device *whatsmeow.Client, cfg *co
 	}
 
 	// ── Incoming allowlist guard ──
-	// Reject BEFORE any media/recorder setup when the caller is not allowed:
-	// the bridge never answers numbers outside the allowlist.
+	// When the caller is not allowed, the bridge stays silent: it does NOT
+	// answer and does NOT reject the call. Leaving the call ringing lets
+	// other devices (e.g. the owner's phone) still pick it up; rejecting
+	// would kill the call for every device. No media setup happens here.
 	if cfg.Incoming.Allowlist && !incoming.Allowed(cfg.Incoming.AllowlistNumbers, peerJID, peerPhone) {
-		log.Printf("incoming call REJECTED (not in allowlist): id=%s peer=%s phone=%q", callID, peerJID, peerPhone)
+		log.Printf("incoming call IGNORED (not in allowlist): id=%s peer=%s phone=%q", callID, peerJID, peerPhone)
 		meta := metadata.NewCallMetadata(callID, peerJID, "")
-		meta.SetFailed("rejected: caller not in allowlist")
+		meta.SetFailed("ignored: caller not in allowlist")
 		metaWriter.WriteMetadata(callID, meta)
-		if err := call.Reject(); err != nil {
-			log.Printf("reject call failed: %v", err)
-		}
 		return
 	}
 

@@ -1,8 +1,9 @@
 // Package incoming guards inbound calls against an allowlist.
 //
 // The guard runs in handleIncomingCall BEFORE any media/recorder setup:
-// a caller that is not allowlisted is rejected (call.Reject()) so the
-// bridge never answers it.
+// a caller that is not allowlisted is left ringing — the bridge neither
+// answers nor rejects, so other devices (e.g. the owner's phone) can
+// still pick the call up.
 package incoming
 
 import "strings"

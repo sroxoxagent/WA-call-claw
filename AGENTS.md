@@ -202,7 +202,7 @@ reach the bot, set `incoming.allowlist` in the config:
 | Config value | Behavior |
 |---|---|
 | `"incoming": { "allowlist": false }` (default) | answer every incoming call (legacy behavior) |
-| `"incoming": { "allowlist": true, "allowlist_numbers": [...] }` | **only** listed callers are answered; everyone else is rejected via `call.Reject()` before any media setup |
+| `"incoming": { "allowlist": true, "allowlist_numbers": [...] }` | **only** listed callers are answered; everyone else is left ringing (never answered, never rejected) |
 
 `allowlist_numbers` entries may be full JIDs (`"66984377057451@lid"`,
 `"6281234567890@s.whatsapp.net"`) or phone numbers with/without `+`
@@ -210,11 +210,13 @@ reach the bot, set `incoming.allowlist` in the config:
 rejects every caller** (strict mode) — don't lock yourself out; include at least
 your own number/LID.
 
-**Runtime behavior:** rejected calls are logged
-(`incoming call REJECTED (not in allowlist): id=... peer=... phone=...`) and a
+**Runtime behavior:** disallowed calls are logged
+(`incoming call IGNORED (not in allowlist): id=... peer=... phone=...`) and a
 metadata entry is written with `status: failed`, reason
-`rejected: caller not in allowlist`. The bridge never answers, records, or
-bridges audio for them. The check runs before WAV recorder / sink setup.
+`ignored: caller not in allowlist`. The bridge never answers, records, or
+bridges audio for them — the call is left ringing so **other devices (e.g. the
+owner's phone) can still pick it up** (rejecting would kill the call everywhere).
+The check runs before WAV recorder / sink setup.
 
 ### Step 5: Start the supervisor
 

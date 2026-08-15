@@ -181,19 +181,21 @@ WARNING meowcaller.gateway: gateway heartbeat failed ()   ← repeats every ~30-
   restart cycles = config error at boot (e.g. `outgoing.allowlist: []` instead of
   `false` crashes the bridge on start).
 
-### Case H — Call never answered / caller hears rejection
+### Case H — Call never answered / caller hears ringing that nobody picks up
 
-1. `grep "incoming call REJECTED" <bridge log> | tail -5` — present → the incoming
-   allowlist guard rejected the caller. Check the config:
+1. `grep "incoming call IGNORED" <bridge log> | tail -5` — present → the incoming
+   allowlist guard left the call ringing (by design: the bridge never answers
+   disallowed callers, and never rejects either, so other devices can still pick
+   up). Check the config:
    - `incoming.allowlist: true` + caller not in `allowlist_numbers` → **by design**
      (add the caller's number/LID to allow).
-   - `incoming.allowlist: true` + empty `allowlist_numbers` → strict mode rejects
+   - `incoming.allowlist: true` + empty `allowlist_numbers` → strict mode ignores
      EVERYONE — add at least your own number/LID.
    - `incoming.allowlist: []` → config type error: must be `true`/`false` boolean
      (same crash pitfall as `outgoing.allowlist`).
 2. `grep "\[incoming\] allowlist=" <bridge log> | tail -1` — startup line confirms
    what the bridge loaded: `allowlist=true numbers=2`.
-3. No REJECTED lines but calls still not answered → check
+3. No IGNORED lines but calls still not answered → check
    `grep "incoming call identity" <bridge log> | tail -3` — if the bridge sees the
    call at all; if not, the problem is WhatsApp-side (session/ringing), not the guard.
 
