@@ -133,6 +133,43 @@ Optional: `OPENCLAW_GATEWAY_URL` (default `ws://127.0.0.1:18789`),
 `ELEVENLABS_TTS_VOICE_ID` (default `gmnazjXOFoOcWA59sd5m`),
 `ELEVENLABS_TTS_SPEED` (default `0.94`).
 
+> ### ⚠️ ELEVENLABS_API_KEY IS MANDATORY — NO EXCEPTIONS
+>
+> The voice agent **cannot work at all** without a valid `ELEVENLABS_API_KEY`:
+> STT (Scribe) and TTS both go through the ElevenLabs API. There is no fallback
+> and no local model.
+>
+> **Do NOT report "green light, ready for testing" until ALL of these are true:**
+> 1. `ELEVENLABS_API_KEY` is set in the runtime environment (or the key file the
+>    script auto-loads), AND
+> 2. The key is **valid** (not a placeholder like `your-key-here`), AND
+> 3. A live STT test passed (a real recording transcribed), AND
+> 4. A live TTS test passed (a real MP3/WAV synthesized).
+>
+> A bridge that starts up and answers calls is NOT "ready" — without a working
+> ElevenLabs key the bot answers the call and then silently fails every STT/TTS
+> step. Check the voice-agent log for `elevenlabs` errors before claiming readiness.
+
+### Step 4b: Opening greeting (set this BEFORE first test call)
+
+The agent's first message on an answered call comes from `default_greeting` in the
+bridge config. It supports three formats (paths relative to the config file's
+directory):
+
+| Format | Behavior |
+|---|---|
+| plain text, e.g. `"Halo, ada yang bisa kubantu?"` | synthesized with TTS at call time |
+| `.txt` file path | file text is read, then synthesized with TTS |
+| `.wav` file path | played **directly as-is, no TTS** (recommended: zero latency, no key needed for playback) |
+
+**Defaults:** the repo ships a ready-to-use WAV greeting at
+`voice-agent/assets/opening-ada-yang-bisa-kubantu.wav` ("Halo, ada yang bisa kubantu?").
+If you don't have a custom greeting yet, point `default_greeting` at that WAV — the
+bot will still speak it even while you sort out your own ElevenLabs voice.
+
+**Do not skip this config.** Without `default_greeting` the call has an awkward dead
+silence until the caller speaks. Set it during setup, before the first test call.
+
 ### Step 5: Start the supervisor
 
 ```bash
