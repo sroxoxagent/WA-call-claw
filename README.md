@@ -2,7 +2,9 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Automated WhatsApp voice call system. **Outgoing one-way announcement calls are fully verified and work reliably** (dial → play a pre-recorded message → hang up, with allowlist + rate limit). Incoming calls are auto-answered and **recorded** (the agent can hear and transcribe the caller), but — due to a WhatsApp relay limitation — **audio from the bot is NOT forwarded to the caller on inbound calls**. See [Known limitations](#known-limitations) before building on inbound-call use cases.
+Answer **incoming WhatsApp calls** with an AI voice agent — hear the caller, think, and speak back. Also supports **one-way outgoing announcement calls** (dial → play a pre-recorded message → hang up).
+
+> ✅ **Inbound 1:1 calls are two-way and verified** (2026-08-15 22:05 WIB: call recorded 796 audio frames, TTS playback heard by caller, 5× barge-in interruptions worked). The multi-relay fix (PR #26) made inbound audio flow in both directions. See `bridge/VERIFIED.md`.
 
 ![Architecture](wa-call-simple.png)
 
@@ -28,6 +30,14 @@ Three pieces only:
 
 Speech-to-text and text-to-speech are pluggable — [ElevenLabs](https://elevenlabs.io) works out of the box (STT: Scribe, TTS: any voice).
 
+## Flow of one call (incoming)
+
+1. Caller rings the agent's WhatsApp number.
+2. meowcaller accepts the call and streams audio to the voice agent (multi-relay fix — audio flows both ways on 1:1 calls).
+3. The agent records speech, detects end of utterance (VAD silence — client webrtcvad fallback and/or ElevenLabs server VAD), and transcribes it (STT).
+4. The transcript is sent to the gateway, which loads the caller's conversation context and generates a reply.
+5. The agent synthesizes the reply as speech (TTS) and streams it back through meowcaller to the caller (verified: barge-in works — caller can interrupt playback).
+
 ## Flow of one call (outgoing)
 
 1. The bridge dials the target number (allowlist-checked, rate-limited).
@@ -36,28 +46,15 @@ Speech-to-text and text-to-speech are pluggable — [ElevenLabs](https://elevenl
 4. The transcript is sent to the gateway, which loads the caller's conversation context and generates a reply.
 5. The agent synthesizes the reply as speech (TTS) and streams it back through meowcaller to the caller.
 
-## Known limitations
+## Verification status
 
-> ⚠️ **Inbound calls (bot is called): audio from the bot is NOT forwarded to the caller.**
-> Verified 2026-08-15 (see `bridge/VERIFIED.md`). WhatsApp relays audio only in the
-> **caller → callee** direction. When the bot is the callee, the caller cannot hear the
-> bot's audio — so a two-way spoken conversation on an **inbound** call is **not possible**
-> with the current meowcaller version.
->
-> What DOES work on inbound calls: the bridge auto-answers, records the caller's audio to
-> WAV, and the voice agent can run the full STT → LLM pipeline on it.
->
-> What works reliably end-to-end: **outgoing** calls (bot is the caller) — announcement
-> playback to the peer, plus receiving the peer's audio (record + STT).
-
-**Use cases that work today:**
-
-| Use case | Status |
-|----------|--------|
-| Outgoing announcement call (dial → play WAV → hang up) | ✅ Verified |
-| Outgoing call + record peer speech (STT) | ✅ Verified |
-| Incoming call: auto-answer + record caller audio | ✅ Verified |
-| Incoming call: two-way spoken conversation (bot speaks back) | ❌ Not supported (relay limitation) |
+| Use case | Status | Evidence |
+|----------|--------|----------|
+| Incoming call: two-way conversation (bot hears + speaks) | ✅ **Verified** | 2026-08-15 22:05 WIB — 796 frames recorded, TTS playback heard, 5× barge-in OK |
+| Incoming call: auto-answer + record caller audio | ✅ Verified | multiple calls, see `bridge/VERIFIED.md` |
+| Outgoing announcement call (dial → play WAV → hang up) | ✅ Verified | 3× calls 2026-08-15 17:07–17:11 |
+| Outgoing call + record peer speech (STT) | ✅ Verified | 150+ frames received |
+| Group calls | 🚧 In progress | core library supports it — bridge in progress |
 
 ## Caller sessions
 
@@ -246,9 +243,8 @@ STT and TTS in this release use ElevenLabs.
 
 ## Status
 
-- ✅ Outgoing calls (one-way WAV announcement, allowlist, rate limit) — **fully verified**
-- ✅ Incoming 1:1 calls: auto-answer + record caller audio — **verified**
-- ❌ Incoming 1:1 calls: bot audio → caller — **NOT supported** (WhatsApp relay limitation, see [Known limitations](#known-limitations))
+- ✅ Incoming 1:1 calls — **two-way, verified** (record caller audio + TTS playback heard by caller + barge-in)
+- ✅ Outgoing calls (one-way WAV announcement, allowlist, rate limit) — **verified**
 - 🚧 Group calls (core library supports it — bridge in progress)
 
 ## License

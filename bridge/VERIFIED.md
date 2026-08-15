@@ -1,25 +1,42 @@
-# ✅ VERIFIED — Outgoing WhatsApp Call (Audio Terdengar)
+# ✅ VERIFIED — WhatsApp Call (Inbound 2-Arah + Outbound)
 
-**Tanggal verifikasi:** 2026-08-15 17:12 WIB
-**Status:** JALAN & TERBUKTI (3x call keluar sukses)
+**Update terakhir:** 2026-08-15 22:30 WIB
+**Status:** JALAN & TERBUKTI — inbound 1:1 **dua arah** + outbound announcement
 
-## Hasil tes
+## Hasil tes OUTBOUND (bot menelepon keluar)
 | # | Waktu | Tujuan | Hasil |
 |---|-------|--------|-------|
 | 1 | 17:07 | Owner | Audio terdengar ✅ |
 | 2 | 17:08 | Owner | Audio terdengar ✅ |
 | 3 | 17:11 | Tester | Audio terdengar + receive 150+ frame ✅ |
 
-## Fix yang membuat ini jalan (engine_media.go send loop)
-1. Sleep timing diperbaiki (delay antar frame sesuai pacing, bukan busy loop)
-2. Player frame benar-benar dikonsumsi (nextFrame dipanggil, bukan di-skip)
-3. Rate limiting / packet drop yang bikin audio nyangkut dihapus
-4. Instrumentasi: log "send loop tick" tiap 15 frame (from_player + pcm_rms + payload_len)
+## Hasil tes INBOUND (bot di-telepon) — DUA ARAH ✅
+| # | Waktu | Caller | Hasil |
+|---|-------|--------|-------|
+| 1 | 22:05 | Owner | Call 2m06s: **796 frames** caller audio direkam (1.5 MB WAV) + **TTS playback terdengar caller** + **5× barge-in** (caller motong playback, STT jalan) ✅ |
+
+Bukti log voice agent (22:06–22:07): `barge-in: STT confirmed 6 word(s) — stopping playback`, `TTS cancelled by barge-in (user started speaking)` — interaksi 2 arah normal.
+
+> **Catatan koreksi (22:30):** Versi VERIFIED.md 17:12 menyatakan "audio bot TIDAK
+> diteruskan ke penelpon pada call inbound" — **KLAIM ITU SALAH/OUTDATED**.
+> Kesimpulan itu diambil dari tes outbound saja. Setelah multi-relay fix (PR #26:
+> `connectAndAllocateAll` — bind ke SEMUA relay endpoint yang ditawarkan,
+> broadcast outbound, merge inbound dengan replay filter), audio inbound
+> mengalir **dua arah**. Jangan revert ke single-relay binding.
+
+## Fix yang membuat ini jalan
+1. **Multi-relay (PR #26)** — `engine_media.go`: `connectAndAllocateAll()` untuk
+   inbound 1:1; phone yang migrasi relay setelah accept tetap kedengaran.
+2. **Send loop pacing** — sleep timing sesuai pacing frame; player frame
+   dikonsumsi (`nextFrame`); rate limiting/packet drop yang bikin audio nyangkut
+   dihapus.
+3. **Instrumentasi** — log "send loop tick" tiap 15 frame (from_player + pcm_rms + payload_len).
 
 ## Aturan penting (hasil observasi)
-- **Relay WA hanya meneruskan audio caller → callee.** Bot HARUS jadi caller (outbound call).
-- Call inbound (bot di-telepon): audio bot TIDAK diteruskan ke penelpon. Jangan pakai untuk use case inbound.
-- Receive path outbound jalan (bot bisa dengar lawan bicara).
+- **Inbound 1:1 = dua arah** (dengan multi-relay fix). Caller dengar bot, bot dengar caller.
+- **Outbound = dua arah juga** (bot caller, bot bisa dengar lawan bicara).
+- **Group call**: core library support, bridge masih in progress.
+- Kalau inbound tiba-tiba "tuli"/caller tidak dengar bot → cek `connectAndAllocateAll` masih intact.
 
 ## Checksum file kunci
 228c1b94786ddeee01fe6810901d88706830eb6ff07683224085cd3bb7c10830  third_party/meowcaller/engine_media.go

@@ -30,13 +30,12 @@ WhatsApp caller ──▶ Bridge (Go, :9090/ws) ──▶ Voice Agent (Python)
                        └── smoke/calls/<call_id>/incoming-*.wav (WAV recordings)
 ```
 
-> ⚠️ **KNOWN LIMITATION — read before testing inbound calls:** WhatsApp relays audio
-> only **caller → callee**. On an **inbound** call (bot is the callee), the caller
-> **cannot hear the bot's audio** — two-way conversation on inbound calls is NOT
-> supported (verified 2026-08-15, see `bridge/VERIFIED.md`). What works on inbound:
-> auto-answer + record caller audio (WAV) + full STT/LLM pipeline on it. What works
-> end-to-end with audio playback: **outgoing** calls (bot is the caller). Do NOT
-> promise "answer the phone and talk back" to anyone — it does not work yet.
+> ✅ **CAPABILITY STATUS (verified 2026-08-15):** Inbound 1:1 calls are **two-way** —
+> the bot hears the caller (recorded to WAV) AND the caller hears the bot's TTS
+> playback (barge-in works). This is thanks to the multi-relay fix (PR #26,
+> `connectAndAllocateAll` in engine_media.go) — do NOT "fix" it back to
+> single-relay binding, inbound audio will break. Outgoing announcement calls are
+> also verified. Group calls: in progress. Details: `bridge/VERIFIED.md`.
 
 ## 2. Prerequisites (check these first)
 
@@ -197,8 +196,10 @@ grep "heartbeat ok" /path/to/meowcaller-agent/meowcaller-openclaw-voice.log | ta
 
 # 4. Test an incoming call: call the WhatsApp number connected to the bridge.
 #    Afterwards: ls smoke/calls/ → a call_id folder with WAV + metadata.json
-#    (expected: caller audio IS recorded; bot audio will NOT be heard by the
-#    caller — known relay limitation, see §1)
+#    Expected on inbound 1:1: caller audio recorded AND caller hears the bot's
+#    TTS playback (two-way, verified 2026-08-15 22:05). If the caller can't hear
+#    the bot, check the multi-relay fix is intact (connectAndAllocateAll in
+#    engine_media.go, PR #26) — single-relay binding breaks inbound audio.
 ```
 
 ## 7. Daily Operations
