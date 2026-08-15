@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Answer **incoming WhatsApp calls** with an AI voice agent — hear the caller, think, and speak back. Also supports **one-way outgoing announcement calls** (dial → play a pre-recorded message → hang up).
+Automated WhatsApp voice call system. **Outgoing one-way announcement calls are fully verified and work reliably** (dial → play a pre-recorded message → hang up, with allowlist + rate limit). Incoming calls are auto-answered and **recorded** (the agent can hear and transcribe the caller), but — due to a WhatsApp relay limitation — **audio from the bot is NOT forwarded to the caller on inbound calls**. See [Known limitations](#known-limitations) before building on inbound-call use cases.
 
 ![Architecture](wa-call-simple.png)
 
@@ -28,13 +28,36 @@ Three pieces only:
 
 Speech-to-text and text-to-speech are pluggable — [ElevenLabs](https://elevenlabs.io) works out of the box (STT: Scribe, TTS: any voice).
 
-## Flow of one call
+## Flow of one call (outgoing)
 
-1. Caller rings the agent's WhatsApp number.
-2. meowcaller accepts the call and streams audio to the voice agent.
-3. The agent records speech, detects end of utterance (VAD silence — client webrtcvad fallback and/or ElevenLabs server VAD), and transcribes it (STT).
+1. The bridge dials the target number (allowlist-checked, rate-limited).
+2. meowcaller streams the call; the agent plays the greeting/announcement audio.
+3. Optionally, the agent records the peer's speech, detects end of utterance (VAD silence), and transcribes it (STT).
 4. The transcript is sent to the gateway, which loads the caller's conversation context and generates a reply.
 5. The agent synthesizes the reply as speech (TTS) and streams it back through meowcaller to the caller.
+
+## Known limitations
+
+> ⚠️ **Inbound calls (bot is called): audio from the bot is NOT forwarded to the caller.**
+> Verified 2026-08-15 (see `bridge/VERIFIED.md`). WhatsApp relays audio only in the
+> **caller → callee** direction. When the bot is the callee, the caller cannot hear the
+> bot's audio — so a two-way spoken conversation on an **inbound** call is **not possible**
+> with the current meowcaller version.
+>
+> What DOES work on inbound calls: the bridge auto-answers, records the caller's audio to
+> WAV, and the voice agent can run the full STT → LLM pipeline on it.
+>
+> What works reliably end-to-end: **outgoing** calls (bot is the caller) — announcement
+> playback to the peer, plus receiving the peer's audio (record + STT).
+
+**Use cases that work today:**
+
+| Use case | Status |
+|----------|--------|
+| Outgoing announcement call (dial → play WAV → hang up) | ✅ Verified |
+| Outgoing call + record peer speech (STT) | ✅ Verified |
+| Incoming call: auto-answer + record caller audio | ✅ Verified |
+| Incoming call: two-way spoken conversation (bot speaks back) | ❌ Not supported (relay limitation) |
 
 ## Caller sessions
 
@@ -140,8 +163,7 @@ If you prefer setting it up yourself, follow the steps below.
 
 | Script | Where | What it does |
 |--------|-------|--------------|
-| `cmd/meowcaller-poc/main.go` | `bridge/` | Go bridge: accepts WhatsApp calls, relays audio |
-| `meowcaller-poc` | `bridge/cmd/meowcaller-poc/` | Starts the bridge (session login + media relay) |
+| `cmd/meowcaller-poc/main.go` | `bridge/cmd/meowcaller-poc/` | Go bridge: accepts WhatsApp calls, relays audio |
 | `meowcaller_openclaw_voice.py` | `voice-agent/` | **Main voice agent** — full pipeline (VAD → STT → LLM → TTS) |
 | `openclaw_gateway_client.py` | `voice-agent/` | WebSocket client for the LLM gateway (heartbeat + reconnect) |
 | `openclaw_session_resolver.py` | `voice-agent/` | Resolves caller JID → phone number → session |
@@ -224,8 +246,9 @@ STT and TTS in this release use ElevenLabs.
 
 ## Status
 
-- ✅ Incoming 1:1 calls
-- ✅ Outgoing calls (one-way WAV announcement, allowlist, rate limit)
+- ✅ Outgoing calls (one-way WAV announcement, allowlist, rate limit) — **fully verified**
+- ✅ Incoming 1:1 calls: auto-answer + record caller audio — **verified**
+- ❌ Incoming 1:1 calls: bot audio → caller — **NOT supported** (WhatsApp relay limitation, see [Known limitations](#known-limitations))
 - 🚧 Group calls (core library supports it — bridge in progress)
 
 ## License

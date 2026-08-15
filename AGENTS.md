@@ -30,6 +30,14 @@ WhatsApp caller ──▶ Bridge (Go, :9090/ws) ──▶ Voice Agent (Python)
                        └── smoke/calls/<call_id>/incoming-*.wav (WAV recordings)
 ```
 
+> ⚠️ **KNOWN LIMITATION — read before testing inbound calls:** WhatsApp relays audio
+> only **caller → callee**. On an **inbound** call (bot is the callee), the caller
+> **cannot hear the bot's audio** — two-way conversation on inbound calls is NOT
+> supported (verified 2026-08-15, see `bridge/VERIFIED.md`). What works on inbound:
+> auto-answer + record caller audio (WAV) + full STT/LLM pipeline on it. What works
+> end-to-end with audio playback: **outgoing** calls (bot is the caller). Do NOT
+> promise "answer the phone and talk back" to anyone — it does not work yet.
+
 ## 2. Prerequisites (check these first)
 
 | Requirement | Minimum version | Check |
@@ -189,6 +197,8 @@ grep "heartbeat ok" /path/to/meowcaller-agent/meowcaller-openclaw-voice.log | ta
 
 # 4. Test an incoming call: call the WhatsApp number connected to the bridge.
 #    Afterwards: ls smoke/calls/ → a call_id folder with WAV + metadata.json
+#    (expected: caller audio IS recorded; bot audio will NOT be heard by the
+#    caller — known relay limitation, see §1)
 ```
 
 ## 7. Daily Operations

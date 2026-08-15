@@ -1,20 +1,23 @@
-# Secrets & runtime (JANGAN commit)
+# ===== RUNTIME CONFIGS (never commit — may contain phone numbers, LIDs, keys) =====
+# Hanya file config AKTIF yang di-ignore. Semua *.example TETAP di-commit.
 config.json
 config.yaml
+config.yml
+voice_context_config.json
+
+# ===== RUNTIME ARTIFACTS (generated saat jalan, jangan commit) =====
 *.log
 *.pid
 .env
-*.bak-*
+smoke/
+runtime/
+backup-*/
+
+# ===== PYTHON =====
 __pycache__/
 *.pyc
+.venv/
+.pytest_cache/
 
-# Build artifacts
-/meowcaller-poc
-bin/
-
-# ===== LOCAL RUNTIME CONFIGS (never commit) =====
-# May contain real phone numbers, WhatsApp LIDs, or server paths
-config.yaml
-config.yml
-config.json
-voice_context_config.json
+# ===== BUILD ARTIFACTS (binary hasil go build — source TIDAK pernah di-ignore) =====
+/bridge/meowcaller-poc
