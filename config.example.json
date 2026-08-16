@@ -26,8 +26,8 @@
   "incoming": {
     "allowlist": true,
     "allowlist_numbers": [
-      "66984377057451@lid",
-      "+6287899303065"
+      "+6287899303065",
+      "+66986575115"
     ]
   },
   "barge_in": {

@@ -97,6 +97,8 @@ Everything user-tunable lives in a **config file** — no code changes needed. C
 | Key | What it does |
 |-----|--------------|
 | `default_greeting` | First message played when a call is picked up. Three formats (paths are relative to the config file's directory): **plain text** → synthesized with TTS; **`.txt` file path** → text is read, then synthesized with TTS; **`.wav` file path** → played **directly as-is, no TTS**. Change it anytime — no code edit. |
+| `incoming.allowlist` | `true`: only callers in `incoming.allowlist_numbers` are answered — everyone else is **left ringing** (not answered, not rejected, so other devices like the owner's phone can still pick up). `false`: every call is answered. |
+| `incoming.allowlist_numbers` | Phone numbers (E.164, `+` optional) that may be answered. The caller's JID/LID is **resolved to a phone number first** (LID → `GetPNForLID`, JID → bare digits) before the allowlist check, so entries are plain phone numbers only. |
 | `system_prompt` | Injected into every LLM request — keeps replies TTS-friendly (see Setup §3). |
 | `stt.*` | Speech-to-text provider and model. |
 | `tts.*` | Text-to-speech provider, voice ID, model, playback speed. |

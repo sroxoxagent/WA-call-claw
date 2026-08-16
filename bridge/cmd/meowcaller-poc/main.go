@@ -140,20 +140,25 @@ func main() {
 }
 
 func resolvePeerPhone(ctx context.Context, device *whatsmeow.Client, peer types.JID) string {
-	if device == nil || peer.IsEmpty() {
+	if peer.IsEmpty() {
 		return ""
 	}
 
 	if peer.Server == types.HiddenUserServer {
+		if device == nil {
+			return ""
+		}
 		phone, err := device.Store.LIDs.GetPNForLID(ctx, peer)
 		if err != nil || phone.IsEmpty() {
 			return ""
 		}
-		return phone.String()
+		// phone.User is the bare digits ("6287899303065") — return E.164-style
+		// "+6287899303065" so allowlist entries can be plain phone numbers.
+		return "+" + phone.User
 	}
 
 	if peer.Server == types.DefaultUserServer {
-		return peer.String()
+		return "+" + peer.User
 	}
 	return ""
 }
