@@ -47,3 +47,18 @@ func TestResolvePeerPhone_AllowlistRoundTrip(t *testing.T) {
 		t.Errorf("expected unknown phone to be rejected")
 	}
 }
+
+func TestResolvePeerPhone_AllowlistEntryWithoutPlus(t *testing.T) {
+	// Allowlist entries may omit the "+" prefix ("66986575115") — matching
+	// strips "+" from both sides (incoming.Allowed), so both forms work.
+	peer := types.NewJID("66986575115", types.DefaultUserServer)
+	phone := resolvePeerPhone(context.Background(), nil, peer)
+	list := []string{"66986575115"} // no "+" prefix
+	if !incoming.Allowed(list, peer.String(), phone) {
+		t.Errorf("expected phone %q to match entry without '+': %v", phone, list)
+	}
+	list = []string{"+66986575115"} // with "+" prefix
+	if !incoming.Allowed(list, peer.String(), phone) {
+		t.Errorf("expected phone %q to match entry with '+': %v", phone, list)
+	}
+}
