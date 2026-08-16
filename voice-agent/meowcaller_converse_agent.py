@@ -32,7 +32,7 @@ except ImportError:
     from websockets.exceptions import ConnectionClosed  # type: ignore
 
 from audio_convert import chunk_pcm, wav_to_pcm_s16le_16k
-# Telegram debug hook removed 2026-08-15 per Owner — no outbound
+# Telegram debug hook removed 2026-08-15 per Shendy — no outbound
 # Telegram logging. Stub kept so legacy call sites are no-ops.
 def debug_notify(*args, **kwargs):
     """No-op: legacy Telegram debug hook removed."""
@@ -74,7 +74,9 @@ VAD_MODE = 3
 VAD_MIN_RMS = 1500.0
 VAD_MIN_SPEECH_FRAMES = 3
 VAD_SILENCE_MS = 1500
-VAD_MAX_SEGMENT_MS = 8000
+VAD_MAX_SEGMENT_MS = 30000  # 30s safety cap (was 8s) — 8s forced-commits mid-sentence
+                             # when callers talk continuously, fragmenting transcripts
+                             # and making the agent reply repeatedly (loop).
 
 
 def pcm_rms_s16le(pcm: bytes) -> float:
