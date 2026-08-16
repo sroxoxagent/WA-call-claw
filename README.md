@@ -76,7 +76,7 @@ Everything user-tunable lives in a **config file** — no code changes needed. C
     "model": "eleven_multilingual_v2",
     "speed": 1.0
   },
-  "vad": { "provider": "webrtcvad", "silence_ms": 1500 }
+  "vad": { "provider": "webrtcvad", "silence_ms": 1000 }
   "barge_in": { "enabled": false },
   "recording": { "record_conversation": true, "recordings_dir": "recordings" },
   "session": { "resolve_jid_to_phone": true, "load_memory": true },
@@ -100,9 +100,9 @@ Everything user-tunable lives in a **config file** — no code changes needed. C
 | `system_prompt` | Injected into every LLM request — keeps replies TTS-friendly (see Setup §3). |
 | `stt.*` | Speech-to-text provider and model. |
 | `tts.*` | Text-to-speech provider, voice ID, model, playback speed. |
-| `vad.provider` | VAD engine: `webrtcvad` (client-side commit, default) or `elevenlabs` (server-side commit via `commit_strategy=vad`, client VAD kept as safety net). |
+| `vad.provider` | VAD engine: `webrtcvad` (client-side commit, default) or `elevenlabs` (server-side commit via `commit_strategy=vad`, client VAD kept as safety net). **Note:** in live calls the ElevenLabs server-side commit rarely fires (known behavior) — the client webrtcvad fallback does the actual commit, so `silence_ms` is the effective knob. |
 | `vad.silence_ms` | Silence duration that ends the caller's turn — client-side VAD (and fallback for `elevenlabs`). |
-| `vad.min_silence_duration_ms` | Server VAD: silence that ends a turn (`elevenlabs` only). |
+| `vad.min_silence_duration_ms` | Server VAD: silence that ends a turn (`elevenlabs` only). Sent to the API but effectively ignored in live calls (see note above). |
 | `vad.min_speech_duration_ms` | Server VAD: minimum speech before a turn can commit (`elevenlabs` only). |
 | `vad.vad_silence_threshold_secs` | Server VAD: speech-vs-silence sensitivity (`elevenlabs` only). |
 | `barge_in.enabled` | `false` (default): user speech **never** interrupts agent playback — responses always play to completion (noise-safe). `true`: speaking while the agent talks stops playback immediately (server VAD events arm it — reliable even during TTS playback). |

@@ -83,9 +83,9 @@ All secrets are loaded from environment variables or existing workspace config.
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `vad.provider` | `webrtcvad` | VAD engine: `webrtcvad` (client-side commit, original behavior) or `elevenlabs` (server-side commit via `commit_strategy=vad`, client VAD kept as safety net). |
-| `vad.silence_ms` | `1500` | Silence threshold for **client-side** commit (webrtcvad provider, and fallback for elevenlabs provider). |
-| `vad.min_silence_duration_ms` | `500` | Server VAD: silence that ends a turn (elevenlabs provider only). |
+| `vad.provider` | `webrtcvad` | VAD engine: `webrtcvad` (client-side commit, original behavior) or `elevenlabs` (server-side commit via `commit_strategy=vad`, client VAD kept as safety net). **Note:** in live calls the ElevenLabs server-side commit rarely fires (known behavior) — the client webrtcvad fallback does the actual commit, so `silence_ms` is the effective knob. |
+| `vad.silence_ms` | `1000` | Silence threshold for **client-side** commit (webrtcvad provider, and fallback for elevenlabs provider). |
+| `vad.min_silence_duration_ms` | `1000` | Server VAD: silence that ends a turn (elevenlabs provider only). Sent to the API but effectively ignored in live calls (see note above). |
 | `vad.min_speech_duration_ms` | `200` | Server VAD: minimum speech before a turn can commit (elevenlabs provider only). |
 | `vad.vad_silence_threshold_secs` | `null` | Server VAD: speech-vs-silence sensitivity in seconds (elevenlabs provider only). |
 | `stt.model` | `scribe_v2_realtime` | STT model override. |
@@ -96,7 +96,7 @@ All secrets are loaded from environment variables or existing workspace config.
 Switch VAD provider by editing `config.json` only — no code changes needed:
 
 ```json
-"vad": { "provider": "elevenlabs", "silence_ms": 1500, "min_silence_duration_ms": 500 }
+"vad": { "provider": "webrtcvad", "silence_ms": 1000, "min_silence_duration_ms": 1000 }
 ```
 
 ### Key Sources

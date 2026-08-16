@@ -11,9 +11,9 @@
     "speed": 0.94
   },
   "vad": {
-    "provider": "elevenlabs",
-    "silence_ms": 1500,
-    "min_silence_duration_ms": 500,
+    "provider": "webrtcvad",
+    "silence_ms": 1000,
+    "min_silence_duration_ms": 1000,
     "min_speech_duration_ms": 200,
     "vad_silence_threshold_secs": null
   },
