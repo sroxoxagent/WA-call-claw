@@ -15,6 +15,7 @@ log line first, then fix the cause. Never guess.
 | `<voice-agent>/meowcaller-stt-agent.log` | STT-only agent (optional mode) | same as voice agent | Only used if you run the STT agent separately |
 | `smoke/calls/<call_id>/metadata.json` | bridge, per call | JSON | Call facts: direction, JID, start/end, duration, **frame_count** (audio health) |
 | `smoke/calls/<call_id>/incoming-*.wav` | bridge, per call | WAV 16-bit PCM | The raw caller audio recording |
+| `<recordings_dir>/conversation-<call_id>.wav` | voice agent, per call | WAV 16-bit PCM | **Both sides** of the call (caller + agent TTS), mixed `(a+b)/2` at call end. Raw `caller-*.pcm` / `agent-*.pcm` tracks remain if the agent crashed before mixing |
 | `smoke/events/` | bridge | JSON event files | Raw protocol events (debug depth) |
 
 > `<DEPLOY_DIR>` = your deployment directory (where config + binaries live). Paths
@@ -54,8 +55,9 @@ Real example (verified two-way call, 2026-08-15 22:05). Read top to bottom:
 | 8. Answer ready | `gateway response: Barge-in is the feature that lets you interrupt me...` | model replied |
 | 9. Speak | `HTTP Request: POST https://api.elevenlabs.io/v1/text-to-speech/... "HTTP/1.1 200 OK"` → `TTS decoded (container): pcm_bytes=335204` | TTS synthesized |
 | 10. Playback | `barge-in armed by VAD` | reply playing to caller (armed = listening for interruptions) |
+| 11. Recording | `conversation recording saved: <path> (caller=.. bytes, agent=.. bytes)` | both-sides WAV written at call end |
 
-If you see phases 1→10 in order, the call worked. **Find the FIRST missing phase —
+If you see phases 1→11 in order, the call worked. **Find the FIRST missing phase —
 that's your bug.**
 
 ## 3. Debug cases

@@ -45,5 +45,9 @@
     "hangup_after_play_sec": 3,
     "ring_timeout": "60s",
     "audio_dir": "assets"
+  },
+  "recording": {
+    "record_conversation": true,
+    "recordings_dir": "recordings"
   }
 }

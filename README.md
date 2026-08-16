@@ -78,6 +78,7 @@ Everything user-tunable lives in a **config file** — no code changes needed. C
   },
   "vad": { "provider": "webrtcvad", "silence_ms": 1500 }
   "barge_in": { "enabled": false },
+  "recording": { "record_conversation": true, "recordings_dir": "recordings" },
   "session": { "resolve_jid_to_phone": true, "load_memory": true },
   "outgoing": {
     "enabled": false,
@@ -105,6 +106,8 @@ Everything user-tunable lives in a **config file** — no code changes needed. C
 | `vad.min_speech_duration_ms` | Server VAD: minimum speech before a turn can commit (`elevenlabs` only). |
 | `vad.vad_silence_threshold_secs` | Server VAD: speech-vs-silence sensitivity (`elevenlabs` only). |
 | `barge_in.enabled` | `false` (default): user speech **never** interrupts agent playback — responses always play to completion (noise-safe). `true`: speaking while the agent talks stops playback immediately (server VAD events arm it — reliable even during TTS playback). |
+| `recording.record_conversation` | `true` (default): record **both sides** of the call (caller + agent TTS) into `conversation-<call_id>.wav` (16 kHz mono s16le). The bridge's `incoming-*.wav` only has the caller's side — this mixes both. `false`: disabled. |
+| `recording.recordings_dir` | Output directory for conversation recordings (relative paths resolve against the config file's directory). Raw `caller-*.pcm` / `agent-*.pcm` tracks are written live and removed after mixing; if the agent crashes mid-call they remain for manual mixing. |
 | `session.resolve_jid_to_phone` | Translate JID → phone number so calls share the caller's WhatsApp session. |
 | `session.load_memory` | `true` (default): resolve the caller's existing OpenClaw session & load its `.memory.md` into the voice prompt. `false`: start a **fresh isolated voice session** — no historical chat from the caller's existing session. System prompt, MD profile files, tools & skills still load because `chat.send` runs through the OpenClaw gateway. |
 | `outgoing.enabled` | Enable one-way outbound announcement calls (`POST /api/call` on the bridge). |

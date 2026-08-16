@@ -41,6 +41,7 @@ except ImportError:
     from websockets.exceptions import ConnectionClosed  # type: ignore
 
 from audio_convert import chunk_pcm, parse_wav_header, wav_to_pcm_s16le_16k
+from conversation_recorder import ConversationRecorder
 # Telegram debug hook removed 2026-08-15 per Shendy — no outbound
 # Telegram logging. Stub kept so legacy call sites are no-ops.
 def debug_notify(*args, **kwargs):
@@ -313,6 +314,27 @@ class OpenClawVoiceAgent:
         self.config: dict = load_agent_config()
         self.default_greeting, self.opening_wav_path = _load_greeting(self.config)
         self.processing_wav_path = _load_processing_audio(self.config)
+        # Conversation recording (both sides: caller + agent TTS). Purely
+        # additive — every hook below is wrapped in try/except so recording
+        # can never break the call pipeline; the recorder is disabled on the
+        # first write error.
+        self.conv_recorder: ConversationRecorder | None = None
+        self.record_conversation = bool(
+            _cfg_bool(self.config, "recording", "record_conversation", default=True)
+        )
+        raw_rec_dir = _cfg_str(
+            self.config, "recording", "recordings_dir", default="recordings"
+        )
+        if not os.path.isabs(raw_rec_dir):
+            raw_rec_dir = os.path.join(
+                os.path.dirname(os.path.abspath(CONFIG_PATH)), raw_rec_dir
+            )
+        self.recordings_dir = raw_rec_dir
+        LOG.info(
+            "conversation recording enabled: %s (dir=%s)",
+            self.record_conversation,
+            self.recordings_dir,
+        )
         # True while the processing/waiting audio is playing — STT finals
         # arriving in this window are almost always the agent's own audio
         # picked up ambiently, so they are ignored (mirrors the opening
@@ -633,6 +655,7 @@ class OpenClawVoiceAgent:
         self._resolved_session_key = None
         self._call_started_at = time.monotonic()
         LOG.info("call started: %s from %s", self.current_call_id, call.get("caller_id", "unknown"))
+        self._start_conversation_recording()
 
         # --- Extract caller identity from event fields ---
         raw_jid, raw_lid = extract_caller_ids_from_event(call)
@@ -925,6 +948,14 @@ class OpenClawVoiceAgent:
 
     async def _forward_audio(self, pcm: bytes) -> None:
         """Forward PCM audio to STT."""
+        # Conversation recording hook — runs BEFORE the STT guard so the
+        # caller track stays complete even if STT is unhealthy. Never raises.
+        if self.conv_recorder is not None:
+            try:
+                self.conv_recorder.write_caller(pcm)
+            except Exception as exc:
+                LOG.warning("conv recording caller write failed, disabled: %s", exc)
+                self.conv_recorder = None
         if self.stt is None or self.stt.closed:
             debug_notify(self.current_call_id, "audio_dropped", f"len={len(pcm)} stt_closed={self.stt.closed if self.stt else 'no_stt'}")
             return
@@ -1257,6 +1288,15 @@ class OpenClawVoiceAgent:
                 LOG.info("playback stopped by barge-in")
                 await self._send_audio_stop(call_id)
                 return False
+            # Conversation recording hook — records exactly what is sent to
+            # the bridge (frames aborted by barge-in are never recorded,
+            # matching what the caller actually hears). Never raises.
+            if self.conv_recorder is not None:
+                try:
+                    self.conv_recorder.write_agent(frame)
+                except Exception as exc:
+                    LOG.warning("conv recording agent write failed, disabled: %s", exc)
+                    self.conv_recorder = None
             await self.bridge.send(pack_audio_frame(call_id, frame))
             await asyncio.sleep(FRAME_PLAYBACK_SECONDS)
         return True
@@ -1360,7 +1400,36 @@ class OpenClawVoiceAgent:
         self._resolved_session_key = None
         self._context_injected.clear()
         await self._stop_stt()
+        await self._finish_conversation_recording()
         LOG.info("call stopped")
+
+    def _start_conversation_recording(self) -> None:
+        """Open the both-sides recorder for the current call (best effort)."""
+        if not self.record_conversation:
+            return
+        try:
+            rec = ConversationRecorder()
+            rec.start(self.current_call_id or "unknown", self.recordings_dir)
+            self.conv_recorder = rec
+        except Exception as exc:
+            LOG.warning("conversation recording unavailable: %s", exc)
+            self.conv_recorder = None
+
+    async def _finish_conversation_recording(self) -> None:
+        """Mix the recorded tracks into conversation-<call_id>.wav (best effort).
+
+        Runs in a thread so the mix (pure Python, ~1-2 s for a long call)
+        never blocks the event loop. If this is skipped (crash), the raw
+        caller-*.pcm / agent-*.pcm tracks stay on disk for manual mixing.
+        """
+        rec = self.conv_recorder
+        self.conv_recorder = None
+        if rec is None:
+            return
+        try:
+            await asyncio.to_thread(rec.finish)
+        except Exception as exc:
+            LOG.warning("conversation recording finish failed: %s", exc, exc_info=True)
 
     async def _stop_stt(self) -> None:
         if self.stt is not None:

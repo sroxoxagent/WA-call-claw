@@ -220,6 +220,29 @@ bridges audio for them — the call is left ringing so **other devices (e.g. the
 owner's phone) can still pick it up** (rejecting would kill the call everywhere).
 The check runs before WAV recorder / sink setup.
 
+### Step 4e: Conversation recording (both sides — on by default)
+
+The agent records the **whole** conversation — caller + agent — into
+`<recordings_dir>/conversation-<call_id>.wav` (16 kHz mono s16le). The bridge's
+`incoming-*.wav` only captures the caller's side; this recorder lives in the
+voice agent and mixes both streams.
+
+| Config value | Behavior |
+|---|---|
+| `"recording": { "record_conversation": true }` (default) | record both sides; mixed WAV written at call end |
+| `"recording": { "record_conversation": false }` | disabled (no-op) |
+| `"recording": { "recordings_dir": "recordings" }` | output dir (relative to the config file's directory) |
+
+**Implementation notes:**
+- Caller track: every inbound frame the agent receives (`_forward_audio`).
+- Agent track: every TTS frame actually sent to the bridge (`_stream_pcm_frames`);
+  barge-in-aborted frames are not recorded (matching what the caller hears).
+- Mix = `(a + b) / 2`, sample-aligned; whichever track is shorter is zero-padded.
+- Failure policy: all hooks are try/except — recording can **never** break the
+  call pipeline; on the first write error the recorder disables itself.
+- If the agent crashes mid-call, raw `caller-<call_id>.pcm` / `agent-<call_id>.pcm`
+  tracks stay on disk for manual mixing (e.g. ffmpeg `amix`).
+
 ### Step 5: Start the supervisor
 
 ```bash
@@ -305,6 +328,7 @@ silently deaf/mute (bad ElevenLabs key) is NOT ready.
 | TC-12b | `processing_audio` resolves (optional feature) | if set: `test -f <resolved-path>` | file exists; when unset, feature is disabled (no-op) |
 | TC-12c | `incoming.allowlist` is a **boolean** | inspect config | `true`/`false`, NOT `[]` (same pitfall as `outgoing.allowlist`) |
 | TC-12d | `incoming.allowlist_numbers` non-empty when allowlist=true | inspect config | ≥1 entry (empty list + true = ignores EVERY caller) |
+| TC-12e | `recording.record_conversation` is a **boolean** (optional) | inspect config | `true`/`false` (default `true`; missing key = enabled) |
 
 > No custom greeting yet? Point `default_greeting` at the shipped
 > `voice-agent/assets/opening-ada-yang-bisa-kubantu.wav` — the bot will speak it
